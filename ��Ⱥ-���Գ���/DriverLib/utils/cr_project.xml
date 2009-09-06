@@ -1,0 +1,6 @@
+<project>
+  <import src=".">
+    <grep filePattern="*.c" pattern="\s*#\s*include\s*&quot;[\./]*" replace="#include &quot;" />
+    <exclude>cr_project.xml</exclude>
+  </import>
+</project>

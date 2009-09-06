@@ -1,0 +1,45 @@
+// 针对LM3S1138处理器配置的链接脚本
+// 注：须与启动代码startup_ewarm.c配合使用
+
+
+// 设定片内FLASH和片内SRAM的地址范围
+//
+// 4G地址空间
+// 64K片内FLASH  起始地址：0x00000000
+// 16K片内SRAM   起始地址：0x20000000
+
+define memory MEM with size = 4G; 
+define region FLASH = MEM:[from 0x00000000 size 64K];
+define region SRAM  = MEM:[from 0x20000000 size 16K];
+
+
+// 设定中断向量表
+//
+// .intvec：初始的中断向量表，必须位于起始地址0x00000000处
+// VTABLE：如果需要动态注册中断服务函数，则需将中断向量表重定位至SRAM内
+//         （地址必须对齐1KB位置）
+
+place at address MEM:0x00000000 {readonly data section .intvec};
+
+define block VTABLE_IN_SRAM with alignment=1K {readwrite data section VTABLE};
+place in SRAM {block VTABLE_IN_SRAM};
+initialize manually {readwrite data section VTABLE};
+
+
+// 设定堆栈
+//
+// 将堆栈放置于SRAM起始位置，若程序运行时耗尽堆栈空间则将触发硬件错误中断。
+
+define block CSTACK_AT_START_OF_SRAM with alignment=8 {readwrite data section CSTACK};
+place at start of SRAM {block CSTACK_AT_START_OF_SRAM};
+do not initialize {readwrite data section CSTACK}; 
+
+
+
+// 其余部分按一般规则放置
+
+place in FLASH {readonly};	// FLASH中包括代码段和只读数据
+place in SRAM {readwrite};	// SRAM存放所有可读写数据
+
+do not initialize	{readwrite data section .noinit}; 
+initialize by copy	{readwrite data}; 

@@ -1,0 +1,46 @@
+/* File: LM3S615.icf
+ * -----------------
+ * 适用于LM3S615的链接配置
+ */
+
+
+// 设定片内FLASH和片内SRAM的地址范围
+//
+// 4G地址空间
+// 32K片内FLASH  区域：0x00000000~0x00004fff
+// 8K片内SRAM    区域：0x20000000~0x20001fff
+
+define memory MEM with size = 4G; 
+define region FLASH = MEM:[from 0x00000000 size 32K];
+define region SRAM  = MEM:[from 0x20000000 size 8K];
+
+
+// 设定中断向量表
+//
+// 初始的中断向量表必须位于起始地址0x00000000处
+// 如果需要动态修改中断向量表，则需将其重定位至SRAM内并要求起始地址对齐1KB位置
+
+place at address MEM:0x00000000 {readonly data section .intvec};
+
+define block VTABLE_IN_SRAM with alignment=1K {readwrite data section VTABLE};
+place in SRAM {block VTABLE_IN_SRAM};
+initialize manually {readwrite data section VTABLE};
+
+
+// 设定堆栈
+//
+// 将堆栈放置于SRAM起始位置，若程序运行时耗尽堆栈空间则将触发硬件错误中断。
+
+define block CSTACK_AT_START_OF_SRAM with alignment=8 {readwrite data section CSTACK};
+place at start of SRAM {block CSTACK_AT_START_OF_SRAM};
+do not initialize {readwrite data section CSTACK}; 
+
+
+
+// 其余部分按一般规则放置
+
+place in FLASH {readonly};	// FLASH中包括代码段和只读数据
+place in SRAM {readwrite};	// SRAM存放所有可读写数据
+
+do not initialize	{readwrite data section .noinit}; 
+initialize by copy	{readwrite data}; 
